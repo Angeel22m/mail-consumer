@@ -133,7 +133,7 @@ export class MailService {
       to,
       from: {
         name: 'Clínica Odontológica Identiclini',
-        email: this.configService.get<string>('eduardomejia66ee@gmail.com')||'',
+        email: this.configService.get<string>('FROM_EMAIL')||'',
       },
       subject,
       html,

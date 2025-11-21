@@ -9,10 +9,10 @@ async function bootstrap() {
     {
       transport: Transport.RMQ,
       options: {
-        urls: ['amqp://localhost:5672'],
+        urls: ['amqp://guest:guest@rabbitmq:5672'],
         queue: 'scheduler_jobs_queue',
 
-        // 👇 NECESARIO: desactiva el ACK automático
+        // NECESARIO: desactiva el ACK automático
         noAck: false,
 
         // Mantener prefetch
@@ -20,7 +20,7 @@ async function bootstrap() {
         isGlobal: true,
 
         queueOptions: {
-          durable: true,   // ⚠️ RECOMENDADO — evita perder mensajes
+          durable: true,   // RECOMENDADO — evita perder mensajes
         },
       },
     },
