@@ -24,8 +24,11 @@ async function bootstrap() {
   const config = app.get(ConfigService);
 
   const requiredEnvs = [
-    'SENDGRID_API_KEY',
-    'FROM_EMAIL', 
+    'SMTP_HOST',
+    'SMTP_PORT',
+    'SMTP_USER',
+    'SMTP_PASS',
+
   ];
 
   requiredEnvs.forEach((key) => {

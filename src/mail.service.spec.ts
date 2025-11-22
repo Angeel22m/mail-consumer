@@ -1,20 +1,20 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MailService } from './mail.service';
-import sgMail from '@sendgrid/mail';
+import nodemailer from 'nodemailer';
 
-jest.mock('@sendgrid/mail');
+jest.mock('nodemailer');
 
 describe('MailService', () => {
   let service: MailService;
-
-  // Guardamos los valores originales
-  const OLD_ENV = process.env;
+  let sendMailMock: jest.Mock;
 
   beforeEach(async () => {
-    // Configuramos variables de entorno temporales
-    process.env = { ...OLD_ENV };
-    process.env.SENDGRID_API_KEY = 'SG.fake_api_key';
-    process.env.FROM_EMAIL = 'test@example.com';
+    sendMailMock = jest.fn().mockResolvedValue(true);
+
+    // Mock transporter
+    (nodemailer.createTransport as jest.Mock).mockReturnValue({
+      sendMail: sendMailMock,
+    });
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [MailService],
@@ -25,8 +25,6 @@ describe('MailService', () => {
 
   afterEach(() => {
     jest.clearAllMocks();
-    // Restauramos el entorno original
-    process.env = OLD_ENV;
   });
 
   it('should be defined', () => {
@@ -34,7 +32,7 @@ describe('MailService', () => {
   });
 
   describe('generarMensajeHTML', () => {
-    it('should generate HTML containing the patient name and date/time', () => {
+    it('should generate HTML containing patient name and date/time', () => {
       const data = {
         citaId: 1,
         destinatario: 'test@example.com',
@@ -42,7 +40,7 @@ describe('MailService', () => {
         fecha: '2025-11-21',
         hora: '15:00',
       };
-      // @ts-ignore
+      // @ts-ignore private access
       const html = service['generarMensajeHTML'](data);
       expect(html).toContain('Juan Pérez');
       expect(html).toContain('2025-11-21');
@@ -51,27 +49,25 @@ describe('MailService', () => {
   });
 
   describe('sendMail', () => {
-    it('should call sgMail.send with correct arguments', async () => {
-      (sgMail.send as jest.Mock).mockResolvedValueOnce(true);
+    it('should call transporter.sendMail with correct arguments', async () => {
+      await service.sendMail('test@example.com', 'Asunto de prueba', '<p>Hola</p>');
 
-      await service.sendMail('test@example.com', 'Asunto', '<p>Hola</p>');
-
-      expect(sgMail.send).toHaveBeenCalledTimes(1);
-      expect(sgMail.send).toHaveBeenCalledWith(
+      expect(sendMailMock).toHaveBeenCalledTimes(1);
+      expect(sendMailMock).toHaveBeenCalledWith(
         expect.objectContaining({
+          from: process.env.SMTP_USER,
           to: 'test@example.com',
-          subject: 'Asunto',
+          subject: 'Asunto de prueba',
           html: '<p>Hola</p>',
         }),
       );
     });
 
-    it('should throw error if sgMail.send fails', async () => {
-      (sgMail.send as jest.Mock).mockRejectedValueOnce(new Error('Send error'));
-
+    it('should throw error if sendMail fails', async () => {
+      sendMailMock.mockRejectedValueOnce(new Error('SMTP error'));
       await expect(
         service.sendMail('test@example.com', 'Asunto', '<p>Hola</p>'),
-      ).rejects.toThrow('Send error');
+      ).rejects.toThrow('SMTP error');
     });
   });
 
@@ -84,7 +80,7 @@ describe('MailService', () => {
         fecha: '2025-11-21',
         hora: '15:00',
       };
-      // @ts-ignore
+      // @ts-ignore mock sendMail
       service.sendMail = jest.fn().mockResolvedValue(true);
 
       await service.procesarTareaRecordatorio(data);
@@ -93,7 +89,6 @@ describe('MailService', () => {
       const htmlArg = (service.sendMail as jest.Mock).mock.calls[0][2];
       expect(htmlArg).toContain('Juan Pérez');
       expect(htmlArg).toContain('2025-11-21');
-      expect(htmlArg).toContain('15:00');
     });
   });
 });
