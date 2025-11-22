@@ -9,12 +9,17 @@ export class MailConsumerController {
 
   // Escucha el patrón 'send_recordatorio' emitido por el Productor
   @EventPattern('send_recordatorio')
+  
   async handleSendRecordatorio(
+    
     @Payload() data: any, // Contiene citaId, destinatario, etc.
     @Ctx() context: RmqContext,
+    
   ) {
     
     try {
+      console.log('📨 Mensaje recibido del backend:', data);
+
       await this.mailerService.procesarTareaRecordatorio(data);
 
       // Si todo sale bien, hacemos ACK para eliminar el mensaje de la cola
