@@ -1,38 +1,32 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { MailService } from './mail.service';
-import { ConfigService } from '@nestjs/config';
 import sgMail from '@sendgrid/mail';
-import { Twilio } from 'twilio';
 
-jest.mock('@sendgrid/mail'); // Mock de SendGrid
-jest.mock('twilio'); // Mock de Twilio
+jest.mock('@sendgrid/mail');
 
-describe('MaileService', () => {
+describe('MailService', () => {
   let service: MailService;
-  let configService: ConfigService;
 
-  const mockConfig = {
-    get: jest.fn((key: string) => {
-      if (key === 'TWILIO_SID') return 'fake_sid';
-      if (key === 'TWILIO_TOKEN') return 'fake_token';
-      return null;
-    }),
-  } as unknown as ConfigService;
+  // Guardamos los valores originales
+  const OLD_ENV = process.env;
 
   beforeEach(async () => {
+    // Configuramos variables de entorno temporales
+    process.env = { ...OLD_ENV };
+    process.env.SENDGRID_API_KEY = 'SG.fake_api_key';
+    process.env.FROM_EMAIL = 'test@example.com';
+
     const module: TestingModule = await Test.createTestingModule({
-      providers: [
-        MailService,
-        { provide: ConfigService, useValue: mockConfig },
-      ],
+      providers: [MailService],
     }).compile();
 
     service = module.get<MailService>(MailService);
-    configService = module.get<ConfigService>(ConfigService);
   });
 
   afterEach(() => {
     jest.clearAllMocks();
+    // Restauramos el entorno original
+    process.env = OLD_ENV;
   });
 
   it('should be defined', () => {
@@ -48,7 +42,7 @@ describe('MaileService', () => {
         fecha: '2025-11-21',
         hora: '15:00',
       };
-      // @ts-ignore private method access
+      // @ts-ignore
       const html = service['generarMensajeHTML'](data);
       expect(html).toContain('Juan Pérez');
       expect(html).toContain('2025-11-21');
@@ -60,13 +54,13 @@ describe('MaileService', () => {
     it('should call sgMail.send with correct arguments', async () => {
       (sgMail.send as jest.Mock).mockResolvedValueOnce(true);
 
-      await service.sendMail('test@example.com', 'Asunto de prueba', '<p>Hola</p>');
+      await service.sendMail('test@example.com', 'Asunto', '<p>Hola</p>');
 
       expect(sgMail.send).toHaveBeenCalledTimes(1);
       expect(sgMail.send).toHaveBeenCalledWith(
         expect.objectContaining({
           to: 'test@example.com',
-          subject: 'Asunto de prueba',
+          subject: 'Asunto',
           html: '<p>Hola</p>',
         }),
       );
@@ -90,7 +84,7 @@ describe('MaileService', () => {
         fecha: '2025-11-21',
         hora: '15:00',
       };
-      // @ts-ignore Mock sendMail
+      // @ts-ignore
       service.sendMail = jest.fn().mockResolvedValue(true);
 
       await service.procesarTareaRecordatorio(data);
@@ -99,6 +93,7 @@ describe('MaileService', () => {
       const htmlArg = (service.sendMail as jest.Mock).mock.calls[0][2];
       expect(htmlArg).toContain('Juan Pérez');
       expect(htmlArg).toContain('2025-11-21');
+      expect(htmlArg).toContain('15:00');
     });
   });
 });
