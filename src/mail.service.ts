@@ -80,7 +80,7 @@ export class MailService {
   async sendMail(to: string, subject: string, html: string) {
     try {
       await this.transporter.sendMail({
-        from: process.env.SMTP_USER,
+        from: `"Clínica Odontológica Identiclinic" <${process.env.SMTP_USER}>`,
         to,
         subject,
         html,

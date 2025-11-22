@@ -55,7 +55,7 @@ describe('MailService', () => {
       expect(sendMailMock).toHaveBeenCalledTimes(1);
       expect(sendMailMock).toHaveBeenCalledWith(
         expect.objectContaining({
-          from: process.env.SMTP_USER,
+          from: `"Clínica Odontológica Identiclinic" <${process.env.SMTP_USER}>`,
           to: 'test@example.com',
           subject: 'Asunto de prueba',
           html: '<p>Hola</p>',
