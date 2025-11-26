@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable,Logger } from '@nestjs/common';
 import nodemailer from 'nodemailer';
 
 interface JobData {
@@ -8,10 +8,17 @@ interface JobData {
   fecha: string;
   hora: string;
 }
+// Nuevo DTO (Data Transfer Object) para la cola de verificación de correo
+interface VerificationPayload {
+    correo: string; // Destinatario
+    codigo: string;  // Código OTP
+    asunto: string;
+}
 
 @Injectable()
 export class MailService {
   private transporter;
+  private readonly logger = new Logger(MailService.name);
 
   constructor() {
     // Configuración SMTP desde variables de entorno
@@ -24,6 +31,19 @@ export class MailService {
         pass: process.env.SMTP_PASS,
       },
     });
+
+    (async () => {
+        try {
+            await this.transporter.verify();
+            this.logger.log('✅ Conexión SMTP verificada con éxito.');
+        } catch (error) {
+            this.logger.error('❌ Error al conectar con el servidor SMTP. Revisar credenciales o host/puerto.', error.stack);
+            // Esto lanzará un error que NestJS capturará e impedirá que la aplicación inicie
+            // si esta clase es un proveedor vital.
+            throw new Error(`Fallo de conexión SMTP: ${error.message}`);
+        }
+    })();
+  
   }
 
   private generarMensajeHTML(data: JobData): string {
@@ -91,6 +111,22 @@ export class MailService {
       throw error;
     }
   }
+  async procesarVerificacionEmail(data: VerificationPayload) {
+        this.logger.log(`[Verificación] Iniciando envío de OTP a ${data.correo}.`);
+        
+        // --- Generar HTML específico para la verificación ---
+        const verificationHtml = `
+        <p>Tu código de verificación de cuenta es:</p>
+        <h2 style="color:#4CAF50; text-align:center; font-size:24px; letter-spacing: 5px;">${data.codigo}</h2>
+        <p>Este código es válido por 15 minutos. No lo compartas con nadie.</p>`;
+
+        await this.sendMail(
+            data.correo, 
+            data.asunto || 'Código de Verificación de Identiclinic', 
+            verificationHtml
+        );
+        this.logger.log(`[Verificación] Correo enviado a ${data.correo}.`);
+    }
 
   async procesarTareaRecordatorio(data: JobData) {
     console.log(`[Cita ${data.citaId}] Iniciando envío de correo.`);
