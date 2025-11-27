@@ -1,4 +1,4 @@
-name: Mail Consumer
+name: CI/CD Mail Consumer - Build & Push
 
 on:
   push:
@@ -10,11 +10,32 @@ env:
 
 jobs:
   # -------------------------------
-  # Build y Push Docker
+  # Tests Unitarios
+  # -------------------------------
+  test:
+    name: Ejecutar Tests Unitarios
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js 22.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: 22.x
+
+      - name: Instalar dependencias
+        run: npm install
+
+      - name: Correr Tests Unitarios
+        run: npm run test
+
+  # -------------------------------
+  # Build y Push Docker (depende de tests)
   # -------------------------------
   build_and_push:
     name: Build & Push Docker Image
-    # Ya no necesita el job 'test'
+    needs: test
     runs-on: ubuntu-latest
 
     steps:
