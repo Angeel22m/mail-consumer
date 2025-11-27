@@ -19,7 +19,7 @@ interface VerificationPayload {
     asunto: string;
 }
 
-// 🎯 NUEVA INTERFAZ: Representa el formato anidado real que llega de NestJS ClientProxy
+//  NUEVA INTERFAZ: Representa el formato anidado real que llega de NestJS ClientProxy
 interface RawMessagePayload<T> {
     pattern: string;
     data: T; // El objeto de datos real (JobData o VerificationPayload)

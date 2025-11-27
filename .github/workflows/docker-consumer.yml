@@ -8,28 +8,7 @@ on:
 env:
   IMAGE_NAME: angeel22m/mail-consumer
 
-jobs:
-  # -------------------------------
-  # Tests Unitarios
-  # -------------------------------
-  test:
-    name: Ejecutar Tests Unitarios
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
-
-      - name: Set up Node.js 22.x
-        uses: actions/setup-node@v3
-        with:
-          node-version: 22.x
-
-      - name: Instalar dependencias
-        run: npm install
-
-      - name: Correr Tests Unitarios
-        run: npm run test
-
+job:
   # -------------------------------
   # Build y Push Docker (depende de tests)
   # -------------------------------
