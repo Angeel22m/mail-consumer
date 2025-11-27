@@ -8,7 +8,7 @@ on:
 env:
   IMAGE_NAME: angeel22m/mail-consumer
 
-job:
+jobs:
   # -------------------------------
   # Build y Push Docker (depende de tests)
   # -------------------------------
